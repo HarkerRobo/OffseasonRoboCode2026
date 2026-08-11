@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.Vision.EstimateConsumer;
 import frc.robot.commands.hood.ZeroHood;
 import frc.robot.simulation.SimulationState;
 import frc.robot.util.Util;
@@ -27,14 +28,16 @@ public class Robot extends TimedRobot
    private Command autonomousCommand;
    public RobotContainer robotContainer;
    public static Robot instance;
-
+   public static Vision vision;
+   private EstimateConsumer consumer;
+   
    public Robot() 
    {
       instance = this;
       Telemetry.getInstance();
       robotContainer = new RobotContainer();
-      
 
+      vision = new Vision(consumer);
 
       // automatically saves log data for telemetry, driver station controls, and joystick presses
       if ((isReal() && Constants.LOG_REAL) || Constants.LOG_SIMULATION)
@@ -53,16 +56,15 @@ public class Robot extends TimedRobot
    {
       robotContainer.init();
       Util.init();
-
-
-      LimelightHelpers.setCameraPose_RobotSpace(Constants.Vision.CAMERA_1_NAME, 
-      Constants.Vision.ROBOT_TO_CAMERA_1.getX(), Constants.Vision.ROBOT_TO_CAMERA_1.getY(), Constants.Vision.ROBOT_TO_CAMERA_1.getZ(),
-      Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_1.getRotation().getX()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_1.getRotation().getY()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_1.getRotation().getZ()));
+      
+      // LimelightHelpers.setCameraPose_RobotSpace(Constants.Vision.CAMERA_1_NAME, 
+      // Constants.Vision.ROBOT_TO_CAMERA_1.getX(), Constants.Vision.ROBOT_TO_CAMERA_1.getY(), Constants.Vision.ROBOT_TO_CAMERA_1.getZ(),
+      // Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_1.getRotation().getX()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_1.getRotation().getY()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_1.getRotation().getZ()));
    
 
-      LimelightHelpers.setCameraPose_RobotSpace(Constants.Vision.CAMERA_2_NAME, 
-      Constants.Vision.ROBOT_TO_CAMERA_2.getX(), Constants.Vision.ROBOT_TO_CAMERA_2.getY(), Constants.Vision.ROBOT_TO_CAMERA_2.getZ(),
-      Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_2.getRotation().getX()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_2.getRotation().getY()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_2.getRotation().getZ()));
+      // LimelightHelpers.setCameraPose_RobotSpace(Constants.Vision.CAMERA_2_NAME, 
+      // Constants.Vision.ROBOT_TO_CAMERA_2.getX(), Constants.Vision.ROBOT_TO_CAMERA_2.getY(), Constants.Vision.ROBOT_TO_CAMERA_2.getZ(),
+      // Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_2.getRotation().getX()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_2.getRotation().getY()), Units.radiansToDegrees(Constants.Vision.ROBOT_TO_CAMERA_2.getRotation().getZ()));
    }
       
    /**
@@ -76,6 +78,8 @@ public class Robot extends TimedRobot
       CommandScheduler.getInstance().schedule(robotContainer.testCommandChooser.getSelected());
 
       Telemetry.getInstance().update();
+
+      vision.periodic();
    }
 
    /**
@@ -215,5 +219,7 @@ public class Robot extends TimedRobot
    public void simulationPeriodic()
    {
       SimulationState.getInstance().update();
+
+      vision.simulationPeriodic(null);
    }
 }

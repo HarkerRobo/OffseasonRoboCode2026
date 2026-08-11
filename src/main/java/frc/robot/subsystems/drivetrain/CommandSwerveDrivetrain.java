@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.*;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.photonvision.EstimatedRobotPose;
+
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
@@ -16,6 +18,7 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
@@ -61,7 +64,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
     private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
     private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
-
 
     /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */
     private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
@@ -292,34 +294,57 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         // );
        
         // MegaTag 1
-        LimelightHelpers.PoseEstimate limelight1Estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(Constants.Vision.CAMERA_1_NAME);
-        LimelightHelpers.PoseEstimate limelight2Estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(Constants.Vision.CAMERA_2_NAME);
+    //     LimelightHelpers.PoseEstimate limelight1Estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(Constants.Vision.CAMERA_1_NAME);
+    //     LimelightHelpers.PoseEstimate limelight2Estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(Constants.Vision.CAMERA_2_NAME);
 
-       // Only run vision updates if we see a tag
-        if ((limelight1Estimate != null && limelight1Estimate.tagCount > 0) ||
-            (limelight2Estimate != null && limelight2Estimate.tagCount > 0))
-            {
+    //    // Only run vision updates if we see a tag
+    //     if ((limelight1Estimate != null && limelight1Estimate.tagCount > 0) ||
+    //         (limelight2Estimate != null && limelight2Estimate.tagCount > 0))
+    //         {
 
-            LimelightHelpers.PoseEstimate bestEstimate = selectBestEstimate(limelight1Estimate, limelight2Estimate);
+    //         LimelightHelpers.PoseEstimate bestEstimate = selectBestEstimate(limelight1Estimate, limelight2Estimate);
 
-            SmartDashboard.putNumber("Drive/bestEstimateX", bestEstimate.pose.getX());
-            SmartDashboard.putNumber("Drive/bestEstimateY", bestEstimate.pose.getY());
-            SmartDashboard.putNumber("Drive/bestEstimateYaw", bestEstimate.pose.getRotation().getDegrees());
-            if (bestEstimate != null && bestEstimate.tagCount > 0)
-            {
-                boolean rejectPose = (bestEstimate.tagCount == 1 && bestEstimate.rawFiducials[0].ambiguity > Constants.Vision.MAX_AMBIGUITY) // Cannot be high ambiguity 
-                                // Must be within the field boundaries
-                                || bestEstimate.pose.getX() < 0.0
-                                || bestEstimate.pose.getX() > Constants.Vision.TAG_LAYOUT.getFieldLength()
-                                || bestEstimate.pose.getY() < 0.0
-                                || bestEstimate.pose.getY() > Constants.Vision.TAG_LAYOUT.getFieldWidth()
-                                || bestEstimate.pose.getTranslation().getDistance(getState().Pose.getTranslation()) > Constants.Vision.MAX_DISTANCE;
-                if (!rejectPose)
-                {
-                    addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds);
-                }
+    //         SmartDashboard.putNumber("Drive/bestEstimateX", bestEstimate.pose.getX());
+    //         SmartDashboard.putNumber("Drive/bestEstimateY", bestEstimate.pose.getY());
+    //         SmartDashboard.putNumber("Drive/bestEstimateYaw", bestEstimate.pose.getRotation().getDegrees());
+    //         if (bestEstimate != null && bestEstimate.tagCount > 0)
+    //         {
+    //             boolean rejectPose = (bestEstimate.tagCount == 1 && bestEstimate.rawFiducials[0].ambiguity > Constants.Vision.MAX_AMBIGUITY) // Cannot be high ambiguity 
+    //                             // Must be within the field boundaries
+    //                             || bestEstimate.pose.getX() < 0.0
+    //                             || bestEstimate.pose.getX() > Constants.Vision.TAG_LAYOUT.getFieldLength()
+    //                             || bestEstimate.pose.getY() < 0.0
+    //                             || bestEstimate.pose.getY() > Constants.Vision.TAG_LAYOUT.getFieldWidth()
+    //                             || bestEstimate.pose.getTranslation().getDistance(getState().Pose.getTranslation()) > Constants.Vision.MAX_DISTANCE;
+    //             if (!rejectPose)
+    //             {
+    //                 addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds);
+    //             }
+    //         }
+    //     } 
+
+        // 
+
+        Optional<EstimatedRobotPose> visionEst = Optional.empty();
+        
+        // Loop through all new results from the camera
+        for (var result : Robot.vision.getCamera().getAllUnreadResults()) {
+            
+            // Try to get a multi-tag pose first (most accurate)
+            visionEst = Robot.vision.getPhotonEstimator().estimateCoprocMultiTagPose(result);
+            
+            // If we can't see multiple tags, fall back to the lowest ambiguity single tag
+            if (visionEst.isEmpty()) {
+                visionEst = Robot.vision.getPhotonEstimator().estimateLowestAmbiguityPose(result);
             }
-        } 
+            
+            // If we successfully found a pose, feed it to the drivetrain!
+            visionEst.ifPresent(est -> {
+                // We pass it to the built-in CTRE addVisionMeasurement method
+                this.addVisionMeasurement(est.estimatedPose.toPose2d(), est.timestampSeconds);
+            });
+        }
+
     }
 
     private void startSimThread() 
@@ -387,36 +412,36 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
 
-    private LimelightHelpers.PoseEstimate selectBestEstimate(LimelightHelpers.PoseEstimate upper, LimelightHelpers.PoseEstimate lower) {
+    // private LimelightHelpers.PoseEstimate selectBestEstimate(LimelightHelpers.PoseEstimate upper, LimelightHelpers.PoseEstimate lower) {
 
-        // Case: Both are null, return null
-        if ((upper == null || upper.tagCount == 0) && (lower == null || lower.tagCount == 0)) {
-            return null;
-        }
+    //     // Case: Both are null, return null
+    //     if ((upper == null || upper.tagCount == 0) && (lower == null || lower.tagCount == 0)) {
+    //         return null;
+    //     }
 
-        //  if (upper.avgTagDist > 3 && lower.avgTagDist > 3) {
-        //     return null; // Use odometry-only if no Limelight sees a tag within 3m
-        // }
+    //     //  if (upper.avgTagDist > 3 && lower.avgTagDist > 3) {
+    //     //     return null; // Use odometry-only if no Limelight sees a tag within 3m
+    //     // }
 
-        // Case: One is null or has no valid tags, return the other
-        if (upper == null || upper.tagCount == 0) {
-            return lower;
-        }
-        if (lower == null || lower.tagCount == 0) {
-            return upper;
-        }
+    //     // Case: One is null or has no valid tags, return the other
+    //     if (upper == null || upper.tagCount == 0) {
+    //         return lower;
+    //     }
+    //     if (lower == null || lower.tagCount == 0) {
+    //         return upper;
+    //     }
 
-        // Case: Favor closer estimate
-        if (upper.avgTagDist < lower.avgTagDist) {
-            return upper;
-        } 
-        if (lower.avgTagDist < upper.avgTagDist) {
-            return lower;
-        }
+    //     // Case: Favor closer estimate
+    //     if (upper.avgTagDist < lower.avgTagDist) {
+    //         return upper;
+    //     } 
+    //     if (lower.avgTagDist < upper.avgTagDist) {
+    //         return lower;
+    //     }
 
-        // Case: Same distance, use most recent timestamp
-        return (upper.timestampSeconds > lower.timestampSeconds) ? upper : lower;
-    }
+    //     // Case: Same distance, use most recent timestamp
+    //     return (upper.timestampSeconds > lower.timestampSeconds) ? upper : lower;
+    // }
 
     private void configureAutoBuilder() 
     {
