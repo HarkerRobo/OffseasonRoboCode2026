@@ -257,6 +257,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return m_sysIdRoutineToApply.dynamic(direction).withName("SysId D" + (direction == Direction.kReverse ? "F" : "R"));
     }
 
+    public void addPhotonVisionMeasurement(Pose2d pose, double timestampSeconds, Matrix<N3, N1> stddevs)
+    {
+        this.addVisionMeasurement(pose, timestampSeconds);
+    }
+
     @Override
     public void periodic() 
     {
@@ -325,25 +330,25 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         // 
 
-        Optional<EstimatedRobotPose> visionEst = Optional.empty();
+        // Optional<EstimatedRobotPose> visionEst = Optional.empty();
         
-        // Loop through all new results from the camera
-        for (var result : Robot.vision.getCamera().getAllUnreadResults()) {
+        // // Loop through all new results from the camera
+        // for (var result : Robot.vision.getCamera().getAllUnreadResults()) {
             
-            // Try to get a multi-tag pose first (most accurate)
-            visionEst = Robot.vision.getPhotonEstimator().estimateCoprocMultiTagPose(result);
+        //     // Try to get a multi-tag pose first (most accurate)
+        //     visionEst = Robot.vision.getPhotonEstimator().estimateCoprocMultiTagPose(result);
             
-            // If we can't see multiple tags, fall back to the lowest ambiguity single tag
-            if (visionEst.isEmpty()) {
-                visionEst = Robot.vision.getPhotonEstimator().estimateLowestAmbiguityPose(result);
-            }
+        //     // If we can't see multiple tags, fall back to the lowest ambiguity single tag
+        //     if (visionEst.isEmpty()) {
+        //         visionEst = Robot.vision.getPhotonEstimator().estimateLowestAmbiguityPose(result);
+        //     }
             
-            // If we successfully found a pose, feed it to the drivetrain!
-            visionEst.ifPresent(est -> {
-                // We pass it to the built-in CTRE addVisionMeasurement method
-                this.addVisionMeasurement(est.estimatedPose.toPose2d(), est.timestampSeconds);
-            });
-        }
+        //     // If we successfully found a pose, feed it to the drivetrain!
+        //     visionEst.ifPresent(est -> {
+        //         // We pass it to the built-in CTRE addVisionMeasurement method
+        //         this.addVisionMeasurement(est.estimatedPose.toPose2d(), est.timestampSeconds);
+        //     });
+        // }
 
     }
 

@@ -71,9 +71,9 @@ public class Constants
         //         new Translation3d(Units.inchesToMeters(-11.743), Units.inchesToMeters(10.009), Units.inchesToMeters(9.0552)),
         //         new Rotation3d(Units.degreesToRadians(1.615693), Units.degreesToRadians(12.567), Units.degreesToRadians(180.0 + 7.383715))); // TODO bc this is copied from 2025 code
 
-        public static final String kCameraName = "photonvision";
+        public static final String kCameraName = "arducam_1";
         public static final Transform3d kRobotToCam = new Transform3d(
-                 new Translation3d(Units.inchesToMeters(-10.5238), Units.inchesToMeters(-9.5396), Units.inchesToMeters(9.2734)), //update 
+                 new Translation3d(Units.inchesToMeters(-10.5238), Units.inchesToMeters(-9.5396), Units.inchesToMeters(9.2734)), // TODO update 
                   new Rotation3d(Units.degreesToRadians(0), Units.degreesToRadians(22.7732), Units.degreesToRadians(90.0 + 37.8094)));
         public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(4, 4, 8); //TODO UPDATE
         public static final Matrix<N3, N1> kMultiTagStdDevs = VecBuilder.fill(0.5, 0.5, 1);
@@ -573,4 +573,5 @@ public class Constants
     public static final boolean LOG_CTRE = false;
 
     public static final boolean DATA_COLLECTION_MODE = false;
+    public static final boolean ARDUCAM_IN_THE_LOOP = true;
 }

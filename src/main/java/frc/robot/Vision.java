@@ -43,7 +43,9 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 
-public class Vision {
+public class Vision 
+
+    {
     private final PhotonCamera camera;
     private final PhotonPoseEstimator photonEstimator;
     private Matrix<N3, N1> curStdDevs;
@@ -57,13 +59,15 @@ public class Vision {
      * @param estConsumer Lamba that will accept a pose estimate and pass it to your desired {@link
      *     org.wpilib.math.estimator.SwerveDrivePoseEstimator}
      */
-    public Vision(EstimateConsumer estConsumer) {
+    public Vision(EstimateConsumer estConsumer) 
+    {
         this.estConsumer = estConsumer;
         camera = new PhotonCamera(Constants.Vision.kCameraName);
         photonEstimator = new PhotonPoseEstimator(Constants.Vision.TAG_LAYOUT, Constants.Vision.kRobotToCam);
 
         // ----- Simulation
-        if (Robot.isSimulation()) {
+        if (Robot.isSimulation() && !Constants.ARDUCAM_IN_THE_LOOP)
+        {
             // Create the vision system simulation which handles cameras and targets on the field.
             visionSim = new VisionSystemSim("main");
             // Add all the AprilTags inside the tag layout as visible targets to this simulated field.
@@ -85,36 +89,44 @@ public class Vision {
         }
     }
 
-    public PhotonPoseEstimator getPhotonEstimator() {
+    public PhotonPoseEstimator getPhotonEstimator() 
+    {
         return photonEstimator;
     }
 
-    public PhotonCamera getCamera() {
+    public PhotonCamera getCamera() 
+    {
         return camera;
     }
 
-    public void periodic() {
+    public void periodic() 
+    {
         Optional<EstimatedRobotPose> visionEst = Optional.empty();
-        for (var result : camera.getAllUnreadResults()) {
+        for (var result : camera.getAllUnreadResults()) 
+        {
             visionEst = photonEstimator.estimateCoprocMultiTagPose(result);
-            if (visionEst.isEmpty()) {
+            if (visionEst.isEmpty()) 
+            {
                 visionEst = photonEstimator.estimateLowestAmbiguityPose(result);
             }
             updateEstimationStdDevs(visionEst, result.getTargets());
 
-            if (Robot.isSimulation()) {
+            if (Robot.isSimulation() && !Constants.ARDUCAM_IN_THE_LOOP) 
+            {
                 visionEst.ifPresentOrElse(
                         est ->
                                 getSimDebugField()
                                         .getObject("VisionEstimation")
                                         .setPose(est.estimatedPose.toPose2d()),
-                        () -> {
+                        () -> 
+                        {
                             getSimDebugField().getObject("VisionEstimation").setPoses();
                         });
             }
 
             visionEst.ifPresent(
-                    est -> {
+                    est -> 
+                    {
                         // Change our trust in the measurement based on the tags we can see
                         var estStdDevs = getEstimationStdDevs();
 
@@ -131,19 +143,23 @@ public class Vision {
      * @param targets All targets in this camera frame
      */
     private void updateEstimationStdDevs(
-            Optional<EstimatedRobotPose> estimatedPose, List<PhotonTrackedTarget> targets) {
-        if (estimatedPose.isEmpty()) {
+            Optional<EstimatedRobotPose> estimatedPose, List<PhotonTrackedTarget> targets) 
+    {
+        if (estimatedPose.isEmpty()) 
+        {
             // No pose input. Default to single-tag std devs
             curStdDevs = Constants.Vision.kSingleTagStdDevs;
-
-        } else {
+        } 
+        else 
+        {
             // Pose present. Start running Heuristic
             var estStdDevs = Constants.Vision.kSingleTagStdDevs;
             int numTags = 0;
             double avgDist = 0;
 
             // Precalculation - see how many tags we found, and calculate an average-distance metric
-            for (var tgt : targets) {
+            for (var tgt : targets) 
+            {
                 var tagPose = photonEstimator.getFieldTags().getTagPose(tgt.getFiducialId());
                 if (tagPose.isEmpty()) continue;
                 numTags++;
@@ -155,10 +171,13 @@ public class Vision {
                                 .getDistance(estimatedPose.get().estimatedPose.toPose2d().getTranslation());
             }
 
-            if (numTags == 0) {
+            if (numTags == 0) 
+            {
                 // No tags visible. Default to single-tag std devs
                 curStdDevs = kSingleTagStdDevs;
-            } else {
+            } 
+            else 
+            {
                 // One or more tags visible, run the full heuristic.
                 avgDist /= numTags;
                 // Decrease std devs if multiple targets are visible
@@ -178,29 +197,37 @@ public class Vision {
      * org.wpilib.math.estimator.SwerveDrivePoseEstimator SwerveDrivePoseEstimator}. This should only
      * be used when there are targets visible.
      */
-    public Matrix<N3, N1> getEstimationStdDevs() {
+    public Matrix<N3, N1> getEstimationStdDevs() 
+    {
         return curStdDevs;
     }
 
     // ----- Simulation
 
-    public void simulationPeriodic(Pose2d robotSimPose) {
-        visionSim.update(robotSimPose);
+    public void simulationPeriodic(Pose2d robotSimPose) 
+    {
+        if (!Constants.ARDUCAM_IN_THE_LOOP)
+        {
+            visionSim.update(robotSimPose);
+        }
     }
 
     /** Reset pose history of the robot in the vision system simulation. */
-    public void resetSimPose(Pose2d pose) {
+    public void resetSimPose(Pose2d pose) 
+    {
         if (Robot.isSimulation()) visionSim.resetRobotPose(pose);
     }
 
     /** A Field2d for visualizing our robot and objects on the field. */
-    public Field2d getSimDebugField() {
+    public Field2d getSimDebugField() 
+    {
         if (!Robot.isSimulation()) return null;
         return visionSim.getDebugField();
     }
 
     @FunctionalInterface
-    public static interface EstimateConsumer {
+    public static interface EstimateConsumer 
+    {
         public void accept(Pose2d pose, double timestamp, Matrix<N3, N1> estimationStdDevs);
     }
 }

@@ -6,6 +6,8 @@ package frc.robot;
 
 import java.nio.ByteBuffer;
 
+import org.photonvision.EstimatedRobotPose;
+
 import com.ctre.phoenix6.SignalLogger;
 
 import edu.wpi.first.math.util.Units;
@@ -18,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.Vision.EstimateConsumer;
 import frc.robot.commands.hood.ZeroHood;
 import frc.robot.simulation.SimulationState;
+import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.util.Util;
 
 /**
@@ -29,7 +32,6 @@ public class Robot extends TimedRobot
    public RobotContainer robotContainer;
    public static Robot instance;
    public static Vision vision;
-   private EstimateConsumer consumer;
    
    public Robot() 
    {
@@ -37,7 +39,7 @@ public class Robot extends TimedRobot
       Telemetry.getInstance();
       robotContainer = new RobotContainer();
 
-      vision = new Vision(consumer);
+      vision = new Vision(robotContainer.drivetrain::addPhotonVisionMeasurement);
 
       // automatically saves log data for telemetry, driver station controls, and joystick presses
       if ((isReal() && Constants.LOG_REAL) || Constants.LOG_SIMULATION)
@@ -220,6 +222,6 @@ public class Robot extends TimedRobot
    {
       SimulationState.getInstance().update();
 
-      vision.simulationPeriodic(null);
+      vision.simulationPeriodic(robotContainer.drivetrain.getState().Pose);
    }
 }
