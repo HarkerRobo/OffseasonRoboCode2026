@@ -39,18 +39,7 @@ public class HoodManual extends Command
     @Override
     public void execute()
     {
-        if (Robot.instance.robotContainer.operator.y().getAsBoolean() && !stallingUp)
-        {
-            Hood.getInstance().setVoltage(Constants.Hood.MANUAL_UP_VOLTAGE);
-        }
-        else if (Robot.instance.robotContainer.operator.a().getAsBoolean() && !stallingDown)
-        {
-            Hood.getInstance().setVoltage(Constants.Hood.MANUAL_DOWN_VOLTAGE);
-        }
-        else
-        {
-            Hood.getInstance().setVoltage(Volts.zero());
-        }
+        Hood.getInstance().setVoltage(Volts.zero()); //before this was dependent on operator a and y
 
         if (Hood.getInstance().getVoltage().in(Volts) < 0.0)
         {

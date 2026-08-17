@@ -76,7 +76,6 @@ public class RobotContainer
         .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
     
     public final CommandXboxController driver = new CommandXboxController(0);
-    public final CommandXboxController operator = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = Modules.createDrivetrain();
 
@@ -115,9 +114,11 @@ public class RobotContainer
         
     private Supplier<Command> stow;
     private Command shoot;
+    private Command softPass;
     private Command midPass;
     private Command hardPass;
     private Command hardShoot;
+    private Command revPass;
     private Command revShoot;
 
     /**
@@ -223,6 +224,14 @@ public class RobotContainer
             .andThen(new ShooterIndexerStartFullSpeed())
             .withName("Shoot");
         
+        softPass =
+            new AimToAngle(Constants.SOFT_PASS_ANGLE.in(Degrees))
+            .andThen(new ShooterTargetSpeed(Constants.SOFT_PASS_VELOCITY.in(MetersPerSecond)))
+            .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
+            .andThen(new IndexerStartFullSpeed())
+            .andThen(new ShooterIndexerStartFullSpeed())
+            .withName("SoftPass");
+
         midPass = 
         // lucas wanted to remove the auto-aligning (4/3/26, at contra costa) 
         // new RotateToAngle(drivetrain,
@@ -247,6 +256,14 @@ public class RobotContainer
                 .andThen(new ShooterIndexerStartFullSpeed())
             .withName("HardPass");
         
+
+        revPass =  Commands.none()
+            .andThen(new ShooterIndexerStartDefaultSpeed())
+            .andThen(new ShooterTargetSpeed(()->Constants.MID_PASS_VELOCITY.in(MetersPerSecond)))
+            .andThen(new WaitUntilCommand(()->Shooter.getInstance().readyToShoot()))
+            //.andThen(
+            //     Commands.runOnce(()->driver.setRumble(RumbleType.kBothRumble, 1.0)))
+            .withName("RevPass");
 
         revShoot = Commands.none()
             .andThen(new ShooterIndexerStartDefaultSpeed())
@@ -347,7 +364,6 @@ public class RobotContainer
         else
         {
             configureDriverBindings();
-            configureOperatorBindings();
         }
         drivetrain.registerTelemetry(Telemetry.getInstance()::telemeterize);
     }
@@ -373,14 +389,18 @@ public class RobotContainer
      */
     private void configureDriverBindings() 
     {
-        driver.a().whileTrue(new RotateToAngle(drivetrain, () -> Constants.AlignConstants.HUB, false)
-            .withName("ShootAlign"));
+        driver.b().onTrue(new StartEjectIntake()
+            .andThen(new IndexerStartEjectSpeed())
+            .andThen(new ShooterIndexerStartEjectSpeed()).withName("Eject"));
+        driver.b().onFalse(new StartRunIntake()
+            .andThen(new IndexerStartDefaultSpeed())
+            .andThen(new ShooterIndexerStartDefaultSpeed()));
         
-        driver.y().onTrue(hardPass);
+        driver.y().onTrue(softPass);
         driver.y().onFalse(stow.get());
         
-        driver.b().onTrue(midPass);
-        driver.b().onFalse(stow.get());
+        driver.a().onTrue(midPass);
+        driver.a().onFalse(stow.get());
         
         driver.x().onTrue(
             new ShooterTargetSpeed(Constants.HARDCODE_VELOCITY.in(MetersPerSecond))
@@ -402,7 +422,7 @@ public class RobotContainer
                     ).withName("SwerveManual"));
 
         // tested
-        driver.leftTrigger().whileTrue(new StartEndCommand(()->isSlow = true, ()->isSlow = false).withName("ToggleSlow"));
+        driver.leftTrigger().whileTrue(midPass.andThen(stow.get())); //.whileTrue(new StartEndCommand(()->isSlow = true, ()->isSlow = false).withName("ToggleSlow"));
 
         driver.rightTrigger().onTrue(
             Constants.DATA_COLLECTION_MODE ? shoot :
@@ -417,41 +437,29 @@ public class RobotContainer
         driver.leftBumper().onTrue(stow.get().andThen(Commands.print("Stowing")).withName("Stow"));
 
         //changed from retract/extand hopper and intake
-        driver.rightBumper().onTrue(
-            Commands.runOnce(()->{
-                if (intakeTriggered)
-                {
-                    intakeTriggered = false;
-                    CommandScheduler.getInstance().schedule(
-                        new StartDefaultIntake()
-                        .withName("DeactivateIntake"));
-                }
-                else if (true)
-                {
-                    intakeTriggered = true;
-                    CommandScheduler.getInstance().schedule(
-                        new StartRunIntake()
-                        .withName("ActivateIntake"));
-                }
-        }));
-        
-        
+        driver.rightBumper().whileTrue(
+            new ExtendIntake()
+            .alongWith(new StartRunIntake())
+            .alongWith(Commands.runOnce(()->intakeTriggered = true))
+            );
+
+        driver.rightBumper().onFalse(
+            new RetractIntake()
+            .alongWith(new StartRunIntake())
+            .alongWith(Commands.runOnce(()->intakeTriggered = true))
+            .andThen(new WaitUntilCommand(()->Intake.getInstance().isStalling()))
+            .andThen(new StartDefaultIntake())
+            .alongWith(Commands.runOnce(()->intakeTriggered = false))
+            );
+
+
+        driver.button(7) // home button/left paddle **I THINK** so TODO
+            .onTrue(revPass);
+
         driver.button(8) // menu button/right paddle
             .onTrue(revShoot);
 
-        // Idle while the robot is disabled. This ensures the configured
-        // neutral mode is applied to the drive motors while disabled.
-        final var idle = new SwerveRequest.Idle();
-        RobotModeTriggers.disabled().whileTrue(
-                drivetrain.applyRequest(() -> idle).ignoringDisable(true).withName("Drivetrain Set Idle"));
-    }
-
-    /**
-     * Configures all operator controller bindings for zeroing, ejecting, passing, and intake positioning.
-     */
-    public void configureOperatorBindings()
-    {
-        operator.start().onTrue(
+        driver.povUp().onTrue(
                 drivetrain.runOnce(() -> {
                 if (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red)
                 {
@@ -467,56 +475,39 @@ public class RobotContainer
                             FlippingUtil.flipFieldPose(Constants.ZEROING_POSE) : Constants.ZEROING_POSE)))
                 .withName("ZeroDrivetrain"));
 
-        operator.back().whileTrue(new ZeroHood()
+        driver.povDown().whileTrue(new ZeroHood()
             .alongWith(new Unspool())
             .withName("ZeroHood+Climb"));
 
-        operator.leftTrigger().onTrue(new StartEjectIntake()
-            .andThen(new IndexerStartEjectSpeed())
-            .andThen(new ShooterIndexerStartEjectSpeed()));
-        operator.leftTrigger().onFalse(new StartRunIntake()
-            .andThen(new IndexerStartDefaultSpeed())
-            .andThen(new ShooterIndexerStartDefaultSpeed()));
-
-        operator.rightTrigger().onTrue(
-            new ShooterTargetSpeed(Constants.Shooter.SOFT_PASS_VELOCITY.in(MetersPerSecond))
-            .andThen(new AimToAngle(60.0))
-            .andThen(new IndexerStartFullSpeed())
-            .andThen(new ShooterIndexerStartFullSpeed())
-            .withName("SoftPass"));
-        operator.rightTrigger().onFalse(stow.get());
-
-        /*
-        operator.leftBumper().onTrue(Commands.runOnce(()->
-        {
-            if (direction == PassDirection.Right) direction = PassDirection.Automatic;
-            else direction = PassDirection.Right;
-        }));
-        operator.rightBumper().onTrue(Commands.runOnce(()->
-        {
-            if (direction == PassDirection.Left) direction = PassDirection.Automatic;
-            else direction = PassDirection.Left;
-        }));
-        */
-
-        operator.x().onTrue(Intake.getInstance().runOnce(()->Intake.getInstance().setVelocity(
-                Constants.Intake.REDUCED_INTAKE_VELOCITY))
-            .andThen(Commands.runOnce(()->intakeTriggered = true))
-            .andThen(new RetractIntake())
+        driver.povRight().onTrue(
+            Intake.getInstance().runOnce(()->Intake.getInstance().setVelocity(Constants.Intake.REDUCED_INTAKE_VELOCITY))
+            .alongWith(Commands.runOnce(()->intakeTriggered = true))
+            .alongWith(new RetractIntake())
+            .andThen(new WaitUntilCommand(()->Intake.getInstance().isStalling()))
             .andThen(new StartDefaultIntake())
-            .andThen(Commands.runOnce(()->
+            .alongWith(Commands.runOnce(()->
             {
                 intakeExtended = false;
+                intakeTriggered = false;
             }
-            )).withName("RetractIntake"));
-        operator.b().onTrue(new StartDefaultIntake()
-            .andThen(Commands.runOnce(()->intakeTriggered = false))
-            .andThen(new ExtendIntake())
+            )).withName("Hard Retract"));
+
+        driver.povLeft().onTrue(
+            new ExtendIntake()
             .andThen(Commands.runOnce(()->
             {
                 intakeExtended = true;
-            }
-            )).withName("ExtendIntake"));
+            })
+            .andThen(new StartRunIntake())
+            .andThen(Commands.runOnce(()->intakeTriggered = true
+            )).withName("Hard Extend")));
+
+        // Idle while the robot is disabled. This ensures the configured
+        // neutral mode is applied to the drive motors while disabled.
+        final var idle = new SwerveRequest.Idle();
+        RobotModeTriggers.disabled().whileTrue(
+                drivetrain.applyRequest(() -> idle).ignoringDisable(true).withName("Drivetrain Set Idle"));
+                
     }
 
     /**
