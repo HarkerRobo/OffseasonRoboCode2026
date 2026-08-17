@@ -24,14 +24,6 @@ public class AimToAngle extends Command
     }
 
     /**
-     * Creates a command that aims the hood to a fixed angle in degrees.
-     */
-    public AimToAngle(double pitch)
-    {
-        this(() -> pitch);
-    }
-
-    /**
      * Reads the target angle, clamps it to hood limits, and commands the hood.
      * Prints a warning if the requested angle was out of bounds.
      */

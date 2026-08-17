@@ -541,8 +541,8 @@ public class Constants
 
     public static final Transform3d ROBOT_TO_HOOD = new Transform3d(0.3, 0.0, 0.34, Rotation3d.kZero); // TODO
 
-    public static final Translation3d PASS_LEFT_TARGET_POSITION = new Translation3d(2.010664, 2.010664, 0.0);
-    public static final Translation3d PASS_RIGHT_TARGET_POSITION = new Translation3d(2.010664, Simulation.FIELD_HEIGHT.in(Meters) - 2.010664, 0.0);
+    public static final Translation2d PASS_LEFT_TARGET_POSITION = new Translation2d(2.010664, 2.010664);
+    public static final Translation2d PASS_RIGHT_TARGET_POSITION = new Translation2d(2.010664, Simulation.FIELD_HEIGHT.in(Meters) - 2.010664);
     
     public static final Angle HARDCODE_HOOD_PITCH = Degrees.of(72.0);
     public static final LinearVelocity HARDCODE_VELOCITY = MetersPerSecond.of(7.35); //TODO!!! test because hardshoot is changed to in front of hub with hopper deployed
@@ -563,6 +563,8 @@ public class Constants
     
     public static final LinearVelocity HARD_PASS_VELOCITY = MetersPerSecond.of(18.0);
     public static final Angle HARD_PASS_ANGLE = Degrees.of(60.0);
+
+    public static final LinearVelocity DEFAULT_FLYWHEEL_VELOCITY = MetersPerSecond.of(5.0);
 
     public static final boolean LOG_SIMULATION = false;
     public static final boolean LOG_REAL = false;
