@@ -496,27 +496,27 @@ public class RobotContainer
 
         driver.povDown().whileTrue(new ZeroHood().withName("ZeroHood"));
 
-        // seeking clarification
-        // driver.povRight().onTrue(
-        //     Intake.getInstance().runOnce(()->Intake.getInstance().setVelocity(Constants.Intake.REDUCED_INTAKE_VELOCITY))
-        //     .andThen(Commands.runOnce(()->intakeTriggered = true))
-        //     .andThen(new RetractIntake())
-        //     .alongWith(
-        //         new WaitUntilCommand(()->Intake.getInstance().isStalling())
-        //         .andThen(new StartDefaultIntake())
-        //         .andThen(Commands.runOnce(()->intakeTriggered = false)))
-        //     .andThen(()->intakeExtended = false)
-        //     .withName("HardRetract"));
+        // NOT seeking clarification
+        driver.povRight().whileTrue(
+            Intake.getInstance().runOnce(()->Intake.getInstance().setVelocity(Constants.Intake.REDUCED_INTAKE_VELOCITY))
+            .andThen(Commands.runOnce(()->intakeTriggered = true))
+            .andThen(new RetractIntake())
+            .alongWith(
+                new WaitUntilCommand(()->Intake.getInstance().isStalling())
+                .andThen(new StartDefaultIntake())
+                .andThen(Commands.runOnce(()->intakeTriggered = false)))
+            .andThen(()->intakeExtended = false)
+            .withName("HardRetract"));
 
-        // driver.povLeft().onTrue(
-        //     new ExtendIntake()
-        //     .andThen(Commands.runOnce(()->
-        //     {
-        //         intakeExtended = true;
-        //     })
-        //     .andThen(new StartRunIntake())
-        //     .andThen(Commands.runOnce(()->intakeTriggered = true
-        //     )).withName("HardExtend")));
+        driver.povLeft().whileTrue(
+            new ExtendIntake()
+            .andThen(Commands.runOnce(()->
+            {
+                intakeExtended = true;
+            })
+            .andThen(new StartRunIntake())
+            .andThen(Commands.runOnce(()->intakeTriggered = true
+            )).withName("HardExtend")));
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
