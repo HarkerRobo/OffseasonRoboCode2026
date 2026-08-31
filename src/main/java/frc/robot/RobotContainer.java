@@ -28,7 +28,10 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
+import edu.wpi.first.wpilibj2.command.Subsystem;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -108,6 +111,7 @@ public class RobotContainer
 
     private boolean isSlow = false;
     public boolean mostRecentAim = false; // false = shoot; true = pass
+    public boolean isShooting = false;
     public boolean intakeTriggered = false; // true if intake has been enabled
     public boolean intakeExtended = true; //true if intake and hopper have been extended // TODO reverse
   
@@ -209,6 +213,7 @@ public class RobotContainer
             .andThen(new StartDefaultIntake())
             .andThen(new ShooterTargetSpeed(()->Constants.DEFAULT_FLYWHEEL_VELOCITY.in(MetersPerSecond)))
             .andThen(new ShooterIndexerStartDefaultSpeed())
+            .andThen(()->isShooting = false)
             .andThen(new AimToAngle(()->75.0))
             .withName("Stow"); // must stay a supplier
 
@@ -272,6 +277,8 @@ public class RobotContainer
             .andThen(new WaitUntilCommand(()->Hood.getInstance().readyToShoot() && Shooter.getInstance().readyToShoot()))
             .andThen(new ShooterIndexerStartFullSpeed())
             .andThen(new IndexerStartFullSpeed()));
+
+
 
         NamedCommands.registerCommand("RevShoot",
             new ShooterTargetSpeed(()->Util.calculateShootVelocity(drivetrain)));
@@ -371,14 +378,27 @@ public class RobotContainer
             new ShooterTargetSpeed(()->Constants.HARDCODE_VELOCITY.in(MetersPerSecond))
             .andThen(new AimToAngle(()->Constants.HARDCODE_HOOD_PITCH.in(Degrees)))
             .andThen(new WaitUntilCommand(()->Hood.getInstance().readyToShoot() && Shooter.getInstance().readyToShoot()))
+            .andThen(()->isShooting = true)
             .andThen(new ShooterIndexerStartFullSpeed())
             .andThen(new IndexerStartFullSpeed())
             .withName("HardShoot"));
 
         driver.x().onFalse(stow.get());
 
+
+        // Note that X is defined as forward according to WPILib convention,
+        // and Y is defined as to the left according to WPILib convention.
+        drivetrain.setDefaultCommand(
+            // Drivetrain will execute this command periodically
+            drivetrain.applyRequest(() -> 
+                    drive.withVelocityX(/*accelerationLimiter.calculate(*/-driver.getLeftY() * MaxSpeed.in(MetersPerSecond) * (isSlow ? Constants.TRANSLATION_SLOW_MULTIPLIER : 1.0)/*)*/) // Drive forward with negative Y (forward)
+                    .withVelocityY(/*accelerationLimiter.calculate(*/-driver.getLeftX() * MaxSpeed.in(MetersPerSecond) * (isSlow ? Constants.TRANSLATION_SLOW_MULTIPLIER : 1.0)/*)*/) // Drive left with negative X (left)
+                    .withRotationalRate(-driver.getRightX() * MaxAngularRate.in(RadiansPerSecond) * (isSlow ? Constants.ROTATION_SLOW_MULTIPLIER : 1.0)) // Drive counterclockwise with negative X (left)
+                ).withName("SwerveManual").onlyIf(()-> !isShooting));
+
+
         // tested
-        driver.leftTrigger().onTrue(
+        driver.leftTrigger().whileTrue(
             new RotateToAngle(drivetrain, ()->{
                 Pose2d drivetrainPose = drivetrain.getState().Pose;
                 if (DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue)
@@ -416,7 +436,7 @@ public class RobotContainer
             if (currentDrivetrainCommand instanceof RotateToAngle) CommandScheduler.getInstance().cancel(currentDrivetrainCommand);
         })));
 
-        driver.rightTrigger().onTrue(
+        driver.rightTrigger().whileTrue(
             Constants.DATA_COLLECTION_MODE ?
             new AimToAngle(()->Telemetry.getInstance().getHoodAngle().in(Degrees))
             .andThen(new ShooterTargetSpeed(()->Telemetry.getInstance().getShooterSpeed().in(MetersPerSecond)))
@@ -432,6 +452,7 @@ public class RobotContainer
             .alongWith(new AimToAngle(()->Util.calculateShootPitch(drivetrain).in(Degrees)))
             .alongWith(new ShooterTargetSpeed(()->Util.calculateShootVelocity(drivetrain)))
             .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
+            .andThen(()->isShooting=true)
             .andThen(new IndexerStartFullSpeed())
             .andThen(new ShooterIndexerStartFullSpeed())
             .withName("Shoot")
@@ -453,12 +474,12 @@ public class RobotContainer
                     new WaitUntilCommand(Intake.getInstance()::isStalling)
                     .andThen(new StartDefaultIntake())
                     .andThen(Commands.runOnce(()->intakeTriggered = false)))
-            ));
+            ).withName("Retracting Intake"));
 
         driver.rightBumper().onFalse(
             new StartRunIntake()
             .andThen(Commands.runOnce(()->intakeTriggered = true))
-            .andThen(new ExtendIntake())
+            .andThen(new ExtendIntake()).withName("Extending Intake")
             );
 
 
@@ -467,7 +488,7 @@ public class RobotContainer
                 .andThen(new ShooterTargetSpeed(()->Constants.MID_PASS_VELOCITY.in(MetersPerSecond)))
                 .andThen(new WaitUntilCommand(()->Shooter.getInstance().readyToShoot()))
                 .andThen(Commands.runOnce(()->driver.setRumble(RumbleType.kBothRumble, 1.0)))
-            .withName("RevPass"));
+            .withName("RevPass")); //TODO change to depend velocity on position
 
 
         driver.button(8).onTrue( // menu button/right paddle
@@ -501,10 +522,8 @@ public class RobotContainer
             Intake.getInstance().runOnce(()->Intake.getInstance().setVelocity(Constants.Intake.REDUCED_INTAKE_VELOCITY))
             .andThen(Commands.runOnce(()->intakeTriggered = true))
             .andThen(new RetractIntake())
-            .alongWith(
-                new WaitUntilCommand(()->Intake.getInstance().isStalling())
-                .andThen(new StartDefaultIntake())
-                .andThen(Commands.runOnce(()->intakeTriggered = false)))
+            .andThen(new StartDefaultIntake())
+            .andThen(Commands.runOnce(()->intakeTriggered = false))
             .andThen(()->intakeExtended = false)
             .withName("HardRetract"));
 

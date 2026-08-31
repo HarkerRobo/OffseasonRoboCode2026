@@ -443,6 +443,7 @@ public class Constants
 		
         public static final LinearVelocity DEFAULT_VELOCITY = MetersPerSecond.of(0.0); // meters per second
         public static final LinearVelocity SOFT_PASS_VELOCITY = MetersPerSecond.of(6.5); // meters per second
+        public static final LinearVelocity MIN_FREEZE_VELOCITY = MetersPerSecond.of(0.1);
 
         public static final ChassisReference MASTER_MECHANICAL_ORIENTATION = ChassisReference.CounterClockwise_Positive;
         public static final ChassisReference FOLLOWER_MECHANICAL_ORIENTATION = ChassisReference.CounterClockwise_Positive;
@@ -450,6 +451,8 @@ public class Constants
         public static final Distance FLYWHEEL_CIRCUMFERENCE = Inches.of(4.0).times(Math.PI); // radius of 2 inches
         
         public static final AngularVelocity MAX_ERROR = RotationsPerSecond.of(0.2);
+
+        
     }
 
     public static final class Climb 
@@ -564,7 +567,7 @@ public class Constants
     public static final LinearVelocity HARD_PASS_VELOCITY = MetersPerSecond.of(18.0);
     public static final Angle HARD_PASS_ANGLE = Degrees.of(60.0);
 
-    public static final LinearVelocity DEFAULT_FLYWHEEL_VELOCITY = MetersPerSecond.of(5.0);
+    public static final LinearVelocity DEFAULT_FLYWHEEL_VELOCITY = MetersPerSecond.of(0.0); //should this not definitely be zero?
 
     public static final boolean LOG_SIMULATION = false;
     public static final boolean LOG_REAL = false;
