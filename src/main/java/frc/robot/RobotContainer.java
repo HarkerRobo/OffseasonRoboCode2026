@@ -352,12 +352,15 @@ public class RobotContainer
      */
     private void configureDriverBindings() 
     {
-        driver.b().whileTrue(new StartEjectIntake()
-            .andThen(new IndexerStartEjectSpeed())
-            .andThen(new ShooterIndexerStartEjectSpeed()).withName("Eject"));
-        driver.b().onFalse(new StartRunIntake()
-            .andThen(new IndexerStartDefaultSpeed())
-            .andThen(new ShooterIndexerStartDefaultSpeed()));
+        driver.b().whileTrue(
+                new AimToAngle(()->Constants.HARD_PASS_ANGLE.in(Degrees))
+                .andThen(new ShooterTargetSpeed(()->Constants.HARD_PASS_VELOCITY.in(MetersPerSecond)))
+                .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
+                .andThen(new IndexerStartFullSpeed())
+                .andThen(new ShooterIndexerStartFullSpeed())
+            .withName("HardPass"));
+
+        driver.b().onFalse(stow.get());
         
         driver.y().whileTrue(
             new AimToAngle(()->Constants.SOFT_PASS_ANGLE.in(Degrees))
@@ -405,7 +408,8 @@ public class RobotContainer
                     .withRotationalRate(-driver.getRightX() * MaxAngularRate.in(RadiansPerSecond) * (isSlow ? Constants.ROTATION_SLOW_MULTIPLIER : 1.0)) // Drive counterclockwise with negative X (left)
                 ).withName("SwerveManual").onlyIf(()-> !isShooting));
 
-
+        //changed from pass to eject
+        /*
         // tested
         driver.leftTrigger().whileTrue(
             new RotateToAngle(drivetrain, ()->{
@@ -444,6 +448,14 @@ public class RobotContainer
             Command currentDrivetrainCommand = drivetrain.getCurrentCommand();
             if (currentDrivetrainCommand instanceof RotateToAngle) CommandScheduler.getInstance().cancel(currentDrivetrainCommand);
         })));
+        */
+
+        driver.leftTrigger().whileTrue(new StartEjectIntake()
+            .andThen(new IndexerStartEjectSpeed())
+            .andThen(new ShooterIndexerStartEjectSpeed()).withName("Eject"));
+        driver.leftTrigger().onFalse(new StartRunIntake()
+            .andThen(new IndexerStartDefaultSpeed())
+            .andThen(new ShooterIndexerStartDefaultSpeed()));
 
         driver.rightTrigger().whileTrue(
             Constants.DATA_COLLECTION_MODE ?
@@ -491,18 +503,18 @@ public class RobotContainer
             .andThen(new ExtendIntake()).withName("Extending Intake")
             );
 
-
+        //removed rev pass
+        /*
         driver.button(7).onTrue( // home button/left paddle
                 Commands.runOnce(()->isRevShoot = false)
                 .andThen(rev.get())
-            .withName("RevPass")); //TODO change to depend velocity on position
-
+            .withName("RevPass"));
+        */
 
         driver.button(8).onTrue( // menu button/right paddle
                 Commands.runOnce(()->isRevShoot = true)
                 .andThen(rev.get())
             .withName("RevShoot"));
-
 
         driver.povUp().onTrue(
                 drivetrain.runOnce(() -> {
@@ -522,7 +534,6 @@ public class RobotContainer
 
         driver.povDown().whileTrue(new ZeroHood().withName("ZeroHood"));
 
-        // NOT seeking clarification
         driver.povRight().onTrue(
             Intake.getInstance().runOnce(()->Intake.getInstance().setVelocity(Constants.Intake.REDUCED_INTAKE_VELOCITY))
             .andThen(Commands.runOnce(()->intakeTriggered = true))
