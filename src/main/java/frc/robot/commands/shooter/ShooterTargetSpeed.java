@@ -35,7 +35,7 @@ public class ShooterTargetSpeed extends Command
     }
 
     /**
-     * This command finishes immedietaly.
+     * This command finishes immediately.
      */
     @Override
     public boolean isFinished()

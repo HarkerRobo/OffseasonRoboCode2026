@@ -114,12 +114,14 @@ public class RobotContainer
     public boolean isShooting = false;
     public boolean intakeTriggered = false; // true if intake has been enabled
     public boolean intakeExtended = true; //true if intake and hopper have been extended // TODO reverse
+    private boolean isRevShoot = true; //true if rev shoot, false if rev pass
   
     public static enum PassDirection {Left, Right, Automatic};
 
     private PassDirection direction = PassDirection.Automatic; // Default
         
     private Supplier<Command> stow;
+    private Supplier<Command> rev;
 
     /**
      * Sets the desired pass direction mode
@@ -210,13 +212,20 @@ public class RobotContainer
     {
         stow = ()->
             new IndexerStartDefaultSpeed()
-            .andThen(new StartDefaultIntake())
-            .andThen(new ShooterTargetSpeed(()->Constants.DEFAULT_FLYWHEEL_VELOCITY.in(MetersPerSecond)))
-            .andThen(new ShooterIndexerStartDefaultSpeed())
+            .alongWith(new StartDefaultIntake())
+            .alongWith(new ShooterTargetSpeed(()->Constants.DEFAULT_FLYWHEEL_VELOCITY.in(MetersPerSecond)))
+            .alongWith(new ShooterIndexerStartDefaultSpeed())
             .andThen(()->isShooting = false)
             .andThen(new AimToAngle(()->75.0))
             .withName("Stow"); // must stay a supplier
 
+        rev = () -> new ShooterIndexerStartDefaultSpeed()
+                .andThen(new ShooterTargetSpeed(
+                    isRevShoot ? ()->Util.calculateShootVelocity(drivetrain) : ()->Constants.MID_PASS_VELOCITY.in(MetersPerSecond)
+                    ))
+                .andThen(new WaitUntilCommand(()->Shooter.getInstance().readyToShoot()))
+                .andThen(Commands.runOnce(()->driver.setRumble(RumbleType.kBothRumble, 1.0)))
+            .withName("Rev");
 
         testCommandChooser.setDefaultOption("None", Commands.none());
         testCommandChooser.addOption("Climb/ClimbUp", new ClimbUp());
@@ -343,14 +352,14 @@ public class RobotContainer
      */
     private void configureDriverBindings() 
     {
-        driver.b().onTrue(new StartEjectIntake()
+        driver.b().whileTrue(new StartEjectIntake()
             .andThen(new IndexerStartEjectSpeed())
             .andThen(new ShooterIndexerStartEjectSpeed()).withName("Eject"));
         driver.b().onFalse(new StartRunIntake()
             .andThen(new IndexerStartDefaultSpeed())
             .andThen(new ShooterIndexerStartDefaultSpeed()));
         
-        driver.y().onTrue(
+        driver.y().whileTrue(
             new AimToAngle(()->Constants.SOFT_PASS_ANGLE.in(Degrees))
             .andThen(new ShooterTargetSpeed(()->Constants.SOFT_PASS_VELOCITY.in(MetersPerSecond)))
             .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
@@ -360,7 +369,7 @@ public class RobotContainer
 
         driver.y().onFalse(stow.get());
         
-        driver.a().onTrue(
+        driver.a().whileTrue(
         // lucas wanted to remove the auto-aligning (4/3/26, at contra costa) 
         // new RotateToAngle(drivetrain,
         //     () -> onLeftSide() ? Constants.PASS_LEFT_TARGET_POSITION.toTranslation2d()
@@ -483,19 +492,15 @@ public class RobotContainer
             );
 
 
-        driver.button(7).onTrue( // home button/left paddle **I THINK** so TODO
-                new ShooterIndexerStartDefaultSpeed()
-                .andThen(new ShooterTargetSpeed(()->Constants.MID_PASS_VELOCITY.in(MetersPerSecond)))
-                .andThen(new WaitUntilCommand(()->Shooter.getInstance().readyToShoot()))
-                .andThen(Commands.runOnce(()->driver.setRumble(RumbleType.kBothRumble, 1.0)))
+        driver.button(7).onTrue( // home button/left paddle
+                Commands.runOnce(()->isRevShoot = false)
+                .andThen(rev.get())
             .withName("RevPass")); //TODO change to depend velocity on position
 
 
         driver.button(8).onTrue( // menu button/right paddle
-            new ShooterIndexerStartDefaultSpeed()
-            .andThen(new ShooterTargetSpeed(()->Util.calculateShootVelocity(drivetrain)))
-            .andThen(new WaitUntilCommand(()->Shooter.getInstance().readyToShoot()))
-            .andThen(Commands.runOnce(()->driver.setRumble(RumbleType.kBothRumble, 1.0)))
+                Commands.runOnce(()->isRevShoot = true)
+                .andThen(rev.get())
             .withName("RevShoot"));
 
 
@@ -518,7 +523,7 @@ public class RobotContainer
         driver.povDown().whileTrue(new ZeroHood().withName("ZeroHood"));
 
         // NOT seeking clarification
-        driver.povRight().whileTrue(
+        driver.povRight().onTrue(
             Intake.getInstance().runOnce(()->Intake.getInstance().setVelocity(Constants.Intake.REDUCED_INTAKE_VELOCITY))
             .andThen(Commands.runOnce(()->intakeTriggered = true))
             .andThen(new RetractIntake())
@@ -527,7 +532,7 @@ public class RobotContainer
             .andThen(()->intakeExtended = false)
             .withName("HardRetract"));
 
-        driver.povLeft().whileTrue(
+        driver.povLeft().onTrue(
             new ExtendIntake()
             .andThen(Commands.runOnce(()->
             {
