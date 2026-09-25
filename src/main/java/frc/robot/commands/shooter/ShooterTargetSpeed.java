@@ -23,15 +23,6 @@ public class ShooterTargetSpeed extends Command
         this.targetSpeedSupplier = targetSpeedSupplier;
         addRequirements(Shooter.getInstance());
     }
-
-    /**
-     * Claims the Shooter subsystem
-     * Stores the supplied target speed source.
-     */
-    public ShooterTargetSpeed(double leftTargetSpeed)
-    {
-        this(()->leftTargetSpeed);
-    }
     
     /**
      * Reads the target speed and applies it as linear velocity.
@@ -44,7 +35,7 @@ public class ShooterTargetSpeed extends Command
     }
 
     /**
-     * This command finishes immedietaly.
+     * This command finishes immediately.
      */
     @Override
     public boolean isFinished()

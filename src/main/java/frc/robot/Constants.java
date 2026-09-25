@@ -443,6 +443,7 @@ public class Constants
 		
         public static final LinearVelocity DEFAULT_VELOCITY = MetersPerSecond.of(0.0); // meters per second
         public static final LinearVelocity SOFT_PASS_VELOCITY = MetersPerSecond.of(6.5); // meters per second
+        public static final LinearVelocity MIN_FREEZE_VELOCITY = MetersPerSecond.of(0.1);
 
         public static final ChassisReference MASTER_MECHANICAL_ORIENTATION = ChassisReference.CounterClockwise_Positive;
         public static final ChassisReference FOLLOWER_MECHANICAL_ORIENTATION = ChassisReference.CounterClockwise_Positive;
@@ -450,6 +451,8 @@ public class Constants
         public static final Distance FLYWHEEL_CIRCUMFERENCE = Inches.of(4.0).times(Math.PI); // radius of 2 inches
         
         public static final AngularVelocity MAX_ERROR = RotationsPerSecond.of(0.2);
+
+        
     }
 
     public static final class Climb 
@@ -541,11 +544,11 @@ public class Constants
 
     public static final Transform3d ROBOT_TO_HOOD = new Transform3d(0.3, 0.0, 0.34, Rotation3d.kZero); // TODO
 
-    public static final Translation3d PASS_LEFT_TARGET_POSITION = new Translation3d(2.010664, 2.010664, 0.0);
-    public static final Translation3d PASS_RIGHT_TARGET_POSITION = new Translation3d(2.010664, Simulation.FIELD_HEIGHT.in(Meters) - 2.010664, 0.0);
+    public static final Translation2d PASS_LEFT_TARGET_POSITION = new Translation2d(2.010664, 2.010664);
+    public static final Translation2d PASS_RIGHT_TARGET_POSITION = new Translation2d(2.010664, Simulation.FIELD_HEIGHT.in(Meters) - 2.010664);
     
     public static final Angle HARDCODE_HOOD_PITCH = Degrees.of(72.0);
-    public static final LinearVelocity HARDCODE_VELOCITY = MetersPerSecond.of(7.35);
+    public static final LinearVelocity HARDCODE_VELOCITY = MetersPerSecond.of(7.35); //TODO!!! test because hardshoot is changed to in front of hub with hopper deployed
 
     public static final Angle PITCH_OFFSET_UNIT = Degrees.of(5.0);
     public static final double FLYWHEEL_OFFSET_UNIT = 0.5;
@@ -555,11 +558,16 @@ public class Constants
 
     public static final LinearAcceleration ACCELERATION_LIMIT = MetersPerSecondPerSecond.of(3.0);
 
+    public static final LinearVelocity SOFT_PASS_VELOCITY = MetersPerSecond.of(6.7); //TODO!!!!
+    public static final Angle SOFT_PASS_ANGLE = Degrees.of(65.0); //TODO!!!!
+
     public static final LinearVelocity MID_PASS_VELOCITY = MetersPerSecond.of(12.7);
     public static final Angle MID_PASS_ANGLE = Degrees.of(65.0);
     
     public static final LinearVelocity HARD_PASS_VELOCITY = MetersPerSecond.of(18.0);
     public static final Angle HARD_PASS_ANGLE = Degrees.of(60.0);
+
+    public static final LinearVelocity DEFAULT_FLYWHEEL_VELOCITY = MetersPerSecond.of(0.0); //should this not definitely be zero?
 
     public static final boolean LOG_SIMULATION = false;
     public static final boolean LOG_REAL = false;
