@@ -24,9 +24,25 @@ import frc.robot.util.Util;
  */
 public class Robot extends TimedRobot 
 {
+   /**
+    * The way that this code works is that, during autonomous mode, it first schedules
+    * zeroHood and schedules the autonomous command once the zeroHood command has ended
+    * (ie., once the hood stalls). Before this we simply did
+    * CommandScheduler.getInstance().schedule(new ZeroHood().andThen(autonomousCommand)),
+    * but this crashes the code if autonomous mode is entered multiple times since you
+    * cannot compose a command multiple times. Normally the way around this would be to
+    * create a new instance of the autonomous command each time but pathplanner doesn't
+    * permit this (AutoChooser) and there is no way to copy commands (!). After consideration,
+    * this is the best way to resolve the issue to prevent the code from crashing during
+    * a match. Other solutions could be to add ZeroHood to the beginning of all of the autons
+    * or to always remember to restart robot code before matches and when testing autons.
+    */
+   private Command zeroHoodCommand;
+   private boolean hasStartedAutonomousCommand = false;
    private Command autonomousCommand;
    public RobotContainer robotContainer;
    public static Robot instance;
+
 
    public Robot() 
    {
@@ -53,6 +69,8 @@ public class Robot extends TimedRobot
    {
       robotContainer.init();
       Util.init();
+
+      zeroHoodCommand = new ZeroHood(); // this must be here since Hoood doesn't exist when the class is created or the constructor is called
 
 
       LimelightHelpers.setCameraPose_RobotSpace(Constants.Vision.CAMERA_1_NAME, 
@@ -120,26 +138,34 @@ public class Robot extends TimedRobot
    {
       autonomousCommand = robotContainer.getAutonomousCommand();
 
-      if (autonomousCommand != null) 
-      {
-         CommandScheduler.getInstance().schedule(new ZeroHood().andThen(autonomousCommand));
-      }
+      CommandScheduler.getInstance().schedule(zeroHoodCommand);
+      hasStartedAutonomousCommand = false;
    }
    /**
     * Called periodically during autonomous mode
-    * No logic is required
     */
    @Override
    public void autonomousPeriodic() 
    {
+      if (!zeroHoodCommand.isScheduled() && !hasStartedAutonomousCommand)
+      {
+         hasStartedAutonomousCommand = true;
+         if (autonomousCommand != null)
+         {
+            System.out.println("Scheduling autonomous command");
+            CommandScheduler.getInstance().schedule(autonomousCommand);
+         }
+      }
    }
 
    /**
     * Called when exiting autonomous mode
-    * No actions are required
     */
    @Override
-   public void autonomousExit() {}
+   public void autonomousExit() 
+   {
+      autonomousCommand = null;
+   }
 
    /**
     * Called when entering teleoperated mode
