@@ -434,7 +434,7 @@ public class Constants
         
         public static final double GEAR_RATIO = 20.0/12.0;
 
-		public static final double KP = 0.7; // 0.1;
+		public static final double KP = 0.4;//0.7; // 0.1;
 		public static final double KI = 0.0;
         public static final double KD = 0.0;
         public static final double KS = 0.14443; // 0.13:

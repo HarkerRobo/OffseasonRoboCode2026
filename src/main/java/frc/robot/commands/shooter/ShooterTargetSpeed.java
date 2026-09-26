@@ -31,6 +31,7 @@ public class ShooterTargetSpeed extends Command
     public void initialize()
     {
         targetSpeed = targetSpeedSupplier.getAsDouble();
+        System.out.println("Shooter targetting speed " + targetSpeed);
         Shooter.getInstance().setEffectiveVelocity(MetersPerSecond.of(targetSpeed));
     }
 

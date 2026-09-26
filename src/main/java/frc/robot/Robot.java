@@ -122,8 +122,7 @@ public class Robot extends TimedRobot
 
       if (autonomousCommand != null) 
       {
-         CommandScheduler.getInstance().schedule(
-            new ZeroHood().andThen(autonomousCommand));
+         CommandScheduler.getInstance().schedule(new ZeroHood().andThen(autonomousCommand));
       }
    }
    /**
@@ -131,7 +130,9 @@ public class Robot extends TimedRobot
     * No logic is required
     */
    @Override
-   public void autonomousPeriodic() {}
+   public void autonomousPeriodic() 
+   {
+   }
 
    /**
     * Called when exiting autonomous mode
