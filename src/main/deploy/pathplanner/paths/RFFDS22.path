@@ -21,7 +21,7 @@
       },
       "prevControl": {
         "x": 5.42930753517256,
-        "y": 0.529799975937021
+        "y": 0.5297999759370211
       },
       "nextControl": {
         "x": 7.046538851561163,
@@ -73,7 +73,7 @@
       },
       "nextControl": {
         "x": 5.933527881728761,
-        "y": 0.3860779358804
+        "y": 0.38607793588039996
       },
       "isLocked": false,
       "linkedName": null
@@ -89,7 +89,7 @@
       },
       "nextControl": {
         "x": 4.363009606349548,
-        "y": 0.60874135209669
+        "y": 0.6087413520966899
       },
       "isLocked": false,
       "linkedName": null
@@ -111,11 +111,11 @@
   "rotationTargets": [
     {
       "waypointRelativePos": 0.37053182214473035,
-      "rotationDegrees": 0
+      "rotationDegrees": 0.0
     },
     {
       "waypointRelativePos": 0.9669811320754716,
-      "rotationDegrees": 0
+      "rotationDegrees": 0.0
     },
     {
       "waypointRelativePos": 1.9575471698113205,
@@ -170,7 +170,7 @@
   "eventMarkers": [
     {
       "name": "ExtendIntake",
-      "waypointRelativePos": 0.5659340659340667,
+      "waypointRelativePos": 0.3,
       "endWaypointRelativePos": null,
       "command": {
         "type": "named",
@@ -226,7 +226,7 @@
     "rotation": 57.894
   },
   "reversed": false,
-  "folder": "RightFirstFarDoubleSweep2",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0.0,
     "rotation": 57.894
