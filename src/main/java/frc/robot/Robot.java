@@ -13,6 +13,8 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.commands.hood.ZeroHood;
@@ -42,6 +44,8 @@ public class Robot extends TimedRobot
    private Command autonomousCommand;
    public RobotContainer robotContainer;
    public static Robot instance;
+    
+   // private PowerDistribution pdh;
 
 
    public Robot() 
@@ -70,7 +74,7 @@ public class Robot extends TimedRobot
       robotContainer.init();
       Util.init();
 
-      zeroHoodCommand = new ZeroHood(); // this must be here since Hoood doesn't exist when the class is created or the constructor is called
+      zeroHoodCommand = new ZeroHood().withTimeout(1.2); // this must be here since Hoood doesn't exist when the class is created or the constructor is called
 
 
       LimelightHelpers.setCameraPose_RobotSpace(Constants.Vision.CAMERA_1_NAME, 
@@ -174,7 +178,7 @@ public class Robot extends TimedRobot
    @Override
    public void teleopInit() 
    {
-
+      // pdh = new PowerDistribution();
       CommandScheduler.getInstance().schedule(new ZeroHood());
       if (autonomousCommand != null) 
       {
@@ -189,6 +193,11 @@ public class Robot extends TimedRobot
    @Override
    public void teleopPeriodic() 
    {
+      // for (int i = 0; i < pdh.getNumChannels(); i++)
+      // {
+      //    System.out.printf("%d - %.4f A\n", i, pdh.getCurrent(i));
+      // }
+      // System.out.println();
    }
 
    /**

@@ -21,6 +21,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -122,6 +123,7 @@ public class RobotContainer
         
     private Supplier<Command> stow;
     private Supplier<Command> rev;
+
 
     /**
      * Sets the desired pass direction mode
@@ -362,15 +364,24 @@ public class RobotContainer
 
         driver.b().onFalse(stow.get());
         
-        driver.y().whileTrue(
-            new AimToAngle(()->Constants.SOFT_PASS_ANGLE.in(Degrees))
-            .andThen(new ShooterTargetSpeed(()->Constants.SOFT_PASS_VELOCITY.in(MetersPerSecond)))
-            .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
-            .andThen(new IndexerStartFullSpeed())
-            .andThen(new ShooterIndexerStartFullSpeed())
-            .withName("SoftPass"));
+        // driver.y().whileTrue(
+        //     new AimToAngle(()->Constants.SOFT_PASS_ANGLE.in(Degrees))
+        //     .andThen(new ShooterTargetSpeed(()->Constants.SOFT_PASS_VELOCITY.in(MetersPerSecond)))
+        //     .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
+        //     .andThen(new IndexerStartFullSpeed())
+        //     .andThen(new ShooterIndexerStartFullSpeed())
+        //     .withName("SoftPass"));
 
-        driver.y().onFalse(stow.get());
+        // driver.y().onFalse(stow.get());
+
+        driver.y().onTrue(
+            new ShooterTargetSpeed(()->8.1)
+            .andThen(new AimToAngle(()->65.9))
+            .andThen(new WaitUntilCommand(()->Hood.getInstance().readyToShoot() && Shooter.getInstance().readyToShoot()))
+            .andThen(()->isShooting = true)
+            .andThen(new ShooterIndexerStartFullSpeed())
+            .andThen(new IndexerStartFullSpeed())
+            .withName("HardShoot"));
         
         driver.a().whileTrue(
         // lucas wanted to remove the auto-aligning (4/3/26, at contra costa) 
@@ -465,12 +476,13 @@ public class RobotContainer
             .andThen(new ShooterIndexerStartFullSpeed())
             .andThen(new IndexerStartFullSpeed()).withName("DCShoot") : 
             
-            new RotateToAngle(drivetrain, ()->{
-                if (DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red)
-                    return FlippingUtil.flipFieldPosition(Constants.AlignConstants.HUB);
-                return Constants.AlignConstants.HUB;
-            }, false)
-            .alongWith(new AimToAngle(()->Util.calculateShootPitch(drivetrain).in(Degrees)))
+            // new RotateToAngle(drivetrain, ()->{
+            //     if (DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red)
+            //         return FlippingUtil.flipFieldPosition(Constants.AlignConstants.HUB);
+            //     return Constants.AlignConstants.HUB;
+            // }, false)
+            //.alongWith(
+                new AimToAngle(()->Util.calculateShootPitch(drivetrain).in(Degrees))//)
             .alongWith(new ShooterTargetSpeed(()->Util.calculateShootVelocity(drivetrain)))
             .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
             .andThen(()->isShooting=true)
