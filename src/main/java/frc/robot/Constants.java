@@ -100,9 +100,9 @@ public class Constants
     // https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
     public class Swerve 
     {
-        public static final double AUTOALIGN_STEER_KP = 9.0; // 10.0;
+        public static final double AUTOALIGN_STEER_KP = 13.0;//9.0; // 10.0;
         public static final double AUTOALIGN_STEER_KI = 0.0;
-        public static final double AUTOALIGN_STEER_KD = 2.5;
+        public static final double AUTOALIGN_STEER_KD = 0.0;// to make autons 2.5;
         
         public static final double AUTOALIGN_DRIVE_KP = 6.0;
         public static final double AUTOALIGN_DRIVE_KI = 0.0;
@@ -266,8 +266,8 @@ public class Constants
         public static int LEFT_ID = 23;
         public static int RIGHT_ID = 33;
 
-        public static final Current STATOR_CURRENT_LIMIT = Amps.of(50.0);
-        public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(40.0);
+        public static final Current STATOR_CURRENT_LIMIT = Amps.of(50.0); // TODO try changing to 30.0
+        public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(40.0); // TODO try changing to 20.0
 
         public static final AngularVelocity INTAKE_VELOCITY = RotationsPerSecond.of(-30.0); // rot/s // not a bug
         public static final AngularVelocity REDUCED_INTAKE_VELOCITY = RotationsPerSecond.of(-20.0);

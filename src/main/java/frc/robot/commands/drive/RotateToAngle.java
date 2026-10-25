@@ -131,7 +131,10 @@ public class RotateToAngle extends Command
         double angle = dt.getState().Pose.getRotation().getDegrees() /*+ 180.0*/ - calcAngle().getDegrees();
         angle = (angle + 360.0) % 360.0;
 
-        if (Math.min(Math.abs(angle), Math.abs(angle - 360.0)) < 1.5)
+        System.out.println("Angle: " + angle);
+        System.out.println("Angle error: " + Math.min(Math.abs(angle), Math.abs(angle - 360.0)));
+
+        if (Math.min(Math.abs(angle), Math.abs(angle - 360.0)) < 5.0)
         {
             Telemetry.getInstance().aligned.set(true);
             return true;

@@ -376,7 +376,7 @@ public class RobotContainer
 
         driver.y().onTrue(
             new ShooterTargetSpeed(()->8.1)
-            .andThen(new AimToAngle(()->65.9))
+            .andThen(new AimToAngle(()->65.7/*65.9*/))
             .andThen(new WaitUntilCommand(()->Hood.getInstance().readyToShoot() && Shooter.getInstance().readyToShoot()))
             .andThen(()->isShooting = true)
             .andThen(new ShooterIndexerStartFullSpeed())
@@ -476,13 +476,14 @@ public class RobotContainer
             .andThen(new ShooterIndexerStartFullSpeed())
             .andThen(new IndexerStartFullSpeed()).withName("DCShoot") : 
             
+            Commands.none()
             // new RotateToAngle(drivetrain, ()->{
             //     if (DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red)
             //         return FlippingUtil.flipFieldPosition(Constants.AlignConstants.HUB);
             //     return Constants.AlignConstants.HUB;
             // }, false)
-            //.alongWith(
-                new AimToAngle(()->Util.calculateShootPitch(drivetrain).in(Degrees))//)
+            .alongWith(
+                new AimToAngle(()->Util.calculateShootPitch(drivetrain).in(Degrees)))
             .alongWith(new ShooterTargetSpeed(()->Util.calculateShootVelocity(drivetrain)))
             .andThen(new WaitUntilCommand(() -> Shooter.getInstance().readyToShoot() && Hood.getInstance().readyToShoot()))
             .andThen(()->isShooting=true)
